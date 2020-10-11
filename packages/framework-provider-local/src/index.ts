@@ -55,7 +55,9 @@ export const Provider: ProviderLibrary = {
   // ProviderAuthLibrary
   auth: {
     rawToEnvelope: rawSignUpDataToUserEnvelope,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fromAuthToken: undefined as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handleSignUpResult: (() => {}) as any,
   },
   // ProviderAPIHandling
@@ -64,9 +66,13 @@ export const Provider: ProviderLibrary = {
     requestFailed,
   },
   connections: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     storeData: notImplemented as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fetchData: notImplemented as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     deleteData: notImplemented as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sendMessage: notImplemented as any,
   },
   // ProviderInfrastructureGetter
