@@ -6,9 +6,9 @@ import { expect } from '../expect'
 import { ApplicationStackBuilder } from '../../src/infrastructure/stacks/application-stack'
 
 const rewire = require('rewire')
-const stackServiceConfigurationModule = rewire('../../src/infrastructure/stack-service-configuration')
+const stackServiceConfigurationModule = rewire('../../src/infrastructure/stack-tools')
 
-describe('the `stack-service-configuration` module', () => {
+describe('the `stack-tools` module', () => {
   afterEach(() => {
     restore()
   })
@@ -21,10 +21,11 @@ describe('the `stack-service-configuration` module', () => {
       const config = {} as BoosterConfig
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stackConfig = (await stackServiceConfigurationModule.getStackServiceConfiguration(config)) as any
-      const appStacks = stackConfig.appStacks.props
-      await appStacks.synthesizer(appStacks.aws, appStacks.configuration)
+      const { cdkToolkit } = (await stackServiceConfigurationModule.getStackServiceConfiguration(config)) as any
+      // We're hacking the CDK to make it believe it's deploying the app
+      cdkToolkit.props.cloudExecutable.props.synthesizer()
 
+      // Even with no parameters, `assemble` should receive the config via closure
       expect(fakeAssemble).to.have.been.calledWithMatch(config)
       revertRewire()
     })
@@ -41,12 +42,12 @@ describe('the `stack-service-configuration` module', () => {
           unmountStack: fake(),
         }
 
-        const stackConfig = (await stackServiceConfigurationModule.getStackServiceConfiguration(config, [
+        const { cdkToolkit } = (await stackServiceConfigurationModule.getStackServiceConfiguration(config, [
           fakeRocket,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ])) as any
-        const appStacks = stackConfig.appStacks.props
-        await appStacks.synthesizer(appStacks.aws, appStacks.configuration)
+        // We're hacking the CDK to make it believe it's deploying the app
+        cdkToolkit.props.cloudExecutable.props.synthesizer()
 
         expect(fakeAssemble).to.have.been.calledWithMatch(config, [fakeRocket])
         revertRewire()
@@ -169,5 +170,43 @@ describe('the `stack-service-configuration` module', () => {
         expect(ApplicationStackBuilder.prototype.buildOn).to.have.been.calledWithMatch({}, [fakeRocket])
       })
     })
+  })
+
+  describe('the `getStackNames` method', () => {
+    const fakeGetStackNames = fake(stackServiceConfigurationModule.__get__('getStackNames'))
+
+    const config = {
+      resourceNames: {
+        applicationStack: 'fake-stack',
+      },
+    }
+
+    fakeGetStackNames(config)
+
+    expect(fakeGetStackNames).to.have.returned([config.resourceNames.applicationStack])
+  })
+
+  describe('the `getStackToolkitName` method', () => {
+    const fakeGetStackToolkitName = fake(stackServiceConfigurationModule.__get__('getStackToolkitName'))
+
+    const config = {
+      appName: 'fake-app-name',
+    }
+
+    fakeGetStackToolkitName(config)
+
+    expect(fakeGetStackToolkitName).to.have.returned(config.appName + '-toolkit')
+  })
+
+  describe('the `getStackToolkitBucketName` method', () => {
+    const fakeGetStackToolkitBucketName = fake(stackServiceConfigurationModule.__get__('getStackToolkitBucketName'))
+
+    const config = {
+      appName: 'fake-app-name',
+    }
+
+    fakeGetStackToolkitBucketName(config)
+
+    expect(fakeGetStackToolkitBucketName).to.have.returned(config.appName + '-toolkit-bucket')
   })
 })
